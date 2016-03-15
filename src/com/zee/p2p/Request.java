@@ -3,8 +3,8 @@
  * Application	 : Centralized P2P Application
  * Program		 : Request.java
  * Description   : This class processes all the client request.
- * Date			 : 09/21/2015
-  * @author Zee 
+ * Date			 : 09/21/2015 
+ * @author Zee
  ***************************************************************************************/
 package com.zee.p2p;
 
@@ -17,12 +17,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class Request {
-
+	
 	Socket myClient;
 	ObjectOutputStream clientObj;
 	CentralIndex index;
 	int id;
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	Request
 	 * Parameters	:	myClient, index, id
@@ -33,7 +33,7 @@ public class Request {
 		this.index = index;
 		this.id = id;
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	parser
 	 * Parameters	:	serverOut, clientIn
@@ -43,45 +43,47 @@ public class Request {
 	public void parser(DataOutputStream serverOut, DataInputStream clientIn) {
 		String fileName;
 		int flag = 0;
-
+		
 		try {
-			while(myClient.isBound()){		//till the client connection with server is bound, it will listen for requests from client
+			while(myClient.isBound()){		//till the client connection with server is bound, it will listen for requests from client 
 				String code;
 				code = clientIn.readUTF();
-
+				
 				/* "UPDATE" request will update files available at client to central index */
 				if(code.equalsIgnoreCase("UPDATE")){
 					int files = clientIn.readInt();
-
+					
 					for(int i = 0; i < files; i++){				//Receive file names from client sequentially
 						fileName = clientIn.readUTF();
 						index.addFiles(myClient, fileName, id);	//addFiles() will add file details to central index
 					}
-
+					
 				}
-
+				
 				/* "SEARCH" request will search for client requested file central index */
 				else if(code.equalsIgnoreCase("SEARCH")){
 					int count = 0, size;
 					ArrayList<Integer> currentList = new ArrayList<Integer>();
-
+					
 					/* read file name to be searched from client */
 					fileName = clientIn.readUTF();
 					currentList = index.searchFiles(fileName);		//searchfile() will return list of peers containing requested file
-
-					int sizeC = currentList.size();
-
-					/* Check to remove the peer name from the list if it already has the file */
-					if(sizeC != 0){
-						Iterator<Integer> temp = currentList.iterator();
-						while(temp.hasNext()){
-							if(temp.next() != id){
-								count++;
+					
+					if(currentList != null){
+						int sizeC = currentList.size();
+						
+						/* Check to remove the peer name from the list if it already has the file */
+						if(sizeC != 0){
+							Iterator<Integer> temp = currentList.iterator();
+							while(temp.hasNext()){
+								if(temp.next() != id){
+									count++;
+								}
 							}
 						}
 					}
 					size = count;
-
+					
 					serverOut.writeInt(size);		//send client the count of peers having file
 					if(size != 0) {
 						Iterator<Integer> iter = currentList.iterator();
@@ -94,22 +96,22 @@ public class Request {
 							count++;
 						}
 					}
-
+					
 					serverOut.write(0);
 				}
-
+				
 				/* "REPLICATE" request will send list of clients available for file replication */
 				else if(code.equalsIgnoreCase("REPLICATE")){
 					ArrayList<Integer> currentList = new ArrayList<Integer>();
-
+					
 					int num = clientIn.readInt();
 					currentList = index.replicateFiles(num, id);
-
+					
 					if(currentList != null){
 						int size = currentList.size();
 						serverOut.writeInt(size);
 						Iterator<Integer> iter = currentList.iterator();
-
+						
 						while(iter.hasNext()){
 							sendPeers(iter.next(), serverOut);
 						}
@@ -117,9 +119,9 @@ public class Request {
 					else{
 						serverOut.writeInt(0);
 					}
-
+					
 				}
-
+				
 				/* "CLOSE" request will end the client connection with server */
 				else if(code.equalsIgnoreCase("CLOSE")){
 					flag = 1;
@@ -142,7 +144,7 @@ public class Request {
 	 * Parameters	:	pid, serverOut
 	 * Returns		:	void
 	 * Description	:	This method will take id of the peer.
-	 * 					Fetches address of peer from central index
+	 * 					Fetches address of peer from central index 
 	 * 					and sends it to client
 	 * **********************************************************************/
 	private void sendPeers(Integer pid, DataOutputStream serverOut){
@@ -150,16 +152,16 @@ public class Request {
 		String host;
 		String port;
 		String peer;
-
+		
 		Peer resPeer = new Peer();
 		resPeer = index.searchPeers(pid);
 		host = resPeer.getPeerName();
 		port = resPeer.getPeerPort().toString();
 		peer = host + " " + port;
-
+		
 		try {
 			serverOut.writeUTF(peer);
-		}
+		} 
 		catch (IOException e) {
 			// TODO Auto-generated catch block
 			System.out.println("Peer [ " + (myClient.getInetAddress()).getHostAddress() + ":" + myClient.getPort() + " ] disconnected !");
