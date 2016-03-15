@@ -29,12 +29,12 @@ import java.util.*;
 
 public class Client {
 	/*Global variables*/
-	static int key = 1;
+	static int key = 1;				
 	static ClientManager locManager;
 
 	public static void main(String[] args) throws ClassNotFoundException {
 		// TODO Auto-generated method stub
-
+		
 		int id, myId;
 		String serverName;
 		ServerSocket locServer;
@@ -42,9 +42,9 @@ public class Client {
 		InputStream serverIn;
 		DataInputStream clientIn;
 		DataOutputStream clientOut;
-
+		
 		Scanner scan = new Scanner(System.in);
-
+		
 		/*User is prompted for server address and details*/
 		System.out.println("+---------------------------+");
 		System.out.println("|** Welcome to P2P Client **|");
@@ -53,17 +53,17 @@ public class Client {
 		serverName = scan.nextLine();
 		System.out.println("Enter Server port:");
 		id = Integer.parseInt(scan.nextLine());
-
+		
 		try {
-
+			
 			myClient = new Socket(serverName, id);		//connection is made to the requested server
 			myId = myClient.getLocalPort();				//local connected port is retrieved
 			myId++;										//new port is created for other peer connections
 			locServer = new ServerSocket(myId);			//local server is started to listen other peer requests
-			locManager = new ClientManager(locServer);
+			locManager = new ClientManager(locServer);	
 			Thread t = new Thread(locManager);			//a thread is created for the local server
 			t.start();
-
+			
 			/*Server IO streams are instantiated*/
 			serverIn = myClient.getInputStream();
 			clientIn = new DataInputStream(serverIn);
@@ -79,7 +79,7 @@ public class Client {
 				while(key != 3){
 					displayMenu(myClient, clientOut, clientIn);	//display() will show user a application menu to user
 				}
-
+				
 			}
 			clientOut.writeUTF("CLOSE");		//if client wishes to close connection send server close request
 			System.out.println("\n*   *   *   *   *   *   *   *   *   *   *   *   *   *   *");
@@ -91,9 +91,9 @@ public class Client {
 			e.printStackTrace();
 		}
 		scan.close();
-
+		
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	displayMenu
 	 * Parameters	:	myClient, clientOut, clientIn
@@ -104,9 +104,9 @@ public class Client {
 	 * **********************************************************************/
 	public static void displayMenu(Socket myClient, DataOutputStream clientOut, DataInputStream clientIn) throws ClassNotFoundException, IOException {
 		// TODO Auto-generated method stub
-
+		
 		Scanner scan = new Scanner(System.in);
-
+		
 		/*Display menu*/
 		System.out.println("\n+-------------------------+");
 		System.out.println("|        P2P Menu         |");
@@ -117,7 +117,7 @@ public class Client {
 		System.out.println("+-------------------------+");
 		System.out.println("Enter the selection number:");
 		key = scan.nextInt();
-
+		
 		/*based on user selection call respective methods*/
 		if(key == 1){
 			searchFile(myClient, clientOut, clientIn);		//method to search file
@@ -127,7 +127,7 @@ public class Client {
 		}
 		//scan.close();
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	replicateFile
 	 * Parameters	:	myClient, clientOut, clientIn
@@ -142,31 +142,33 @@ public class Client {
 		int num;
 		String host;
 		int port;
-
+		
 		Scanner scan = new Scanner(System.in);
-
+		
 		/*Take file name and number of copies to be replicated from user*/
 		System.out.println("Enter the file name with extension to replicate: ");
 		fileName = scan.nextLine();
 		System.out.println("Enter number of copies to be replicated: ");
 		num = scan.nextInt();
-
+		
 		/*Check for empty file names*/
 		while(fileName.isEmpty()){
 			System.out.println("Enter a valid file name !");
 			fileName = scan.nextLine();
 		}
-
+		
 			clientOut.writeUTF("REPLICATE");			//send server replicate request
 			clientOut.writeInt(num);					//send replication number
 			int size = clientIn.readInt();
 			String[] currentPeers = new String[2];
 			String tempObj;
-
+			
 			/*If peers are available for replication, send files to peers*/
 			if(size != 0){
+				String[] cList = new String[size];
 				for(int i = 0; i < size; i++){
 					tempObj = clientIn.readUTF();
+					cList[i] = tempObj;
 					currentPeers = tempObj.split(" ");	//get peer address and port
 					Socket repClient;
 					DataOutputStream repOut;
@@ -174,12 +176,12 @@ public class Client {
 					FileInputStream fis;
 					BufferedInputStream bis;
 					OutputStream ois;
-
+					
 					host = currentPeers[0];
 					port = Integer.parseInt(currentPeers[1]);
 					port++;							//get port number of the local peer server
 					//System.out.println(host + " " + port);
-
+					
 					repClient = new Socket(host, port);		//connect to local peer server
 					repOut = new DataOutputStream(repClient.getOutputStream());
 					repIn = new DataInputStream(repClient.getInputStream());
@@ -188,32 +190,38 @@ public class Client {
 					ois = repClient.getOutputStream();
 					String folder = "up", file;
 					file = folder +"/" + fileName;
-
+					
 					/*Search for file directory if doesn't exist create*/
 					File directory = new File("up");
 					if(!directory.exists()){
 						directory.mkdir();
 					}
-
+					
 					/*Send the file to peer using buffer stream*/
 					File myFile = new File(file);
-
+					
 			        byte [] mybytearray  = new byte [(int)myFile.length()];
 			        repOut.writeInt((int)myFile.length());;
-
+			        
 			        fis = new FileInputStream(myFile);
 			        bis = new BufferedInputStream(fis);
 			        bis.read(mybytearray,0,mybytearray.length);
 			        ois.write(mybytearray,0,mybytearray.length);
 			        ois.flush();
-
+					
 			        bis.close();
 			        fis.close();
 			        ois.close();
 			        repClient.close();
 				}
+				for (int j = 0; j < cList.length; j++) {
+					clientOut.writeUTF("UPDATE");		//send file update request to server
+					clientOut.writeInt(-1);
+					clientOut.writeUTF(cList[j]);
+					clientOut.writeUTF(fileName);
+				}
 				System.out.println("File replicated successfully !");
-
+				
 			}
 			else{
 				System.out.println("File cannot be replicated !");
@@ -221,24 +229,24 @@ public class Client {
 			}
 		//scan.close();
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	searchFile
 	 * Parameters	:	myClient, clientOut, clientIn
 	 * Returns		:	void
-	 * Description	:	This method will search the requested file in the
+	 * Description	:	This method will search the requested file in the 
 	 * 					server central index by sending request to server.
 	 * **********************************************************************/
 	private static void searchFile(Socket myClient, DataOutputStream clientOut, DataInputStream clientIn) throws IOException, ClassNotFoundException {
 		// TODO Auto-generated method stub
 		String fileName;
-
+		
 		Scanner scan = new Scanner(System.in);
-
+		
 		/*Take name of file to be searched from the user*/
 		System.out.println("Enter the file name with extension to search: ");
 		fileName = scan.nextLine();
-
+		
 		if(fileName.isEmpty()){
 			System.out.println("Enter a valid file name !");
 		}
@@ -250,35 +258,35 @@ public class Client {
 		}
 		//scan.close();
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	searchResults
 	 * Parameters	:	myClient, fileName, clientOut, clientIn
 	 * Returns		:	void
-	 * Description	:	This method will retrieve the search results from
+	 * Description	:	This method will retrieve the search results from 
 	 * 					server and displays it to user for further processing.
 	 * **********************************************************************/
 	private static void searchResults(Socket myClient, String fileName, DataOutputStream clientOut, DataInputStream clientIn, long lStartTime) throws IOException, ClassNotFoundException {
 		// TODO Auto-generated method stub
-
+		
 		int counter = 0, sel;
 		int pPort;
 		String pHost;
-
+		
 		String[] currentPeers = new String[2];			//variable to save peer details
 		String tempObj;
 		Hashtable<Integer, String[]> peerList = new Hashtable<Integer, String[]>();	//a local hash table to save the retrieved peer details
 		Scanner scan = new Scanner(System.in);
-
+		
 		int size = clientIn.readInt();		//get size of peer list
-
+		
 		/*Display peer details*/
 		if(size != 0){
 			System.out.println("\nFile - '" + fileName + "' is available at the following peers: ");
 			System.out.println("+------------------------------------+");
 			System.out.println("| ID       Host Name         Port    |");
 			System.out.println("+------------------------------------+");
-
+			
 			for(int i = 0; i < size; i++){
 				counter++;
 				tempObj = clientIn.readUTF();			//get peer details
@@ -292,7 +300,7 @@ public class Client {
 			System.out.println("Elapsed time for file search: " + difference + " ms");
 			System.out.println("Enter the ID of the peer to download file from it: ");	//prompt user for peer from where file have to be downloaded
 			sel = scan.nextInt();
-
+			
 			currentPeers = peerList.get(sel);	//get the peer details from corresponding selection
 			pHost = currentPeers[0];
 			pPort = Integer.parseInt(currentPeers[1]);
@@ -304,7 +312,7 @@ public class Client {
 			System.out.println("+----------------------------------+");
 			System.out.println("# File not avilable at any peers ! #");
 			System.out.println("+----------------------------------+");
-			displayMenu(myClient, clientOut, clientIn);
+			displayMenu(myClient, clientOut, clientIn);	
 		}
 	}
 
@@ -312,7 +320,7 @@ public class Client {
 	 * Method Name 	:	download
 	 * Parameters	:	pHost, pPort, fileName
 	 * Returns		:	void
-	 * Description	:	This method will download file from the requested
+	 * Description	:	This method will download file from the requested 
 	 * 					peer address and port.
 	 * **********************************************************************/
 	private static void download(String pHost, int pPort, String fileName) throws UnknownHostException, IOException {
@@ -323,28 +331,28 @@ public class Client {
 		InputStream dnInput;
 		BufferedOutputStream buffOut = null;
 		FileOutputStream fileOut = null;
-
+		
 		File directory = new File("down");
 		String down = "down/" + fileName;
-
+		
 		/*Search for download directory if doesn't exist create*/
 		if(!directory.exists()){
 			directory.mkdir();
 		}
 		long lStartTime = System.currentTimeMillis();
 		dnClient = new Socket(pHost, pPort);		//connect to the peer
-
+		
 		/*Server IO streams are instantiated*/
 		dnOut = new DataOutputStream(dnClient.getOutputStream());
 		dnIn = new DataInputStream(dnClient.getInputStream());
-
+		
 		dnOut.writeUTF("GET");			//send download request
 		dnOut.writeUTF(fileName);		//send name of file to be downloaded
 		int fileSize = dnIn.readInt();	//read size of file
-
+		
 		int bytesRead;
 	    int current = 0;
-
+	    
 	    /*Initiate file receive using buffered stream*/
 	    try {
 	      System.out.println("\nRecieving file " + fileName + "...!");
@@ -354,15 +362,15 @@ public class Client {
 	      buffOut = new BufferedOutputStream(fileOut);
 	      bytesRead = dnInput.read(mybytearray,0,mybytearray.length);
 	      current = bytesRead;
-
+	      
 	      do {
 	         bytesRead = dnInput.read(mybytearray, current, (mybytearray.length-current));
 	         if(bytesRead >= 0){
 	        	 current += bytesRead;
 	         }
 	      } while(bytesRead > 0);
-
-	      buffOut.write(mybytearray, 0 , current);		//write the downloaded file
+		  
+	      buffOut.write(mybytearray, 0 , current);		//write the downloaded file 
 	      buffOut.flush();
 	      System.out.println("File - " + fileName + " downloaded successfully !");
 	      long lEndTime = System.currentTimeMillis();
@@ -374,7 +382,7 @@ public class Client {
 	        if (buffOut != null) buffOut.close();
 	      }
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	serverUpdate
 	 * Parameters	:	myClient, clientOut
@@ -384,18 +392,18 @@ public class Client {
 	 * **********************************************************************/
 	private static void serverUpdate(Socket myClient, DataOutputStream clientOut) throws IOException {
 		// TODO Auto-generated method stub
-
+		
 		clientOut.writeUTF("UPDATE");		//send file update request to server
-
+		
 		File directory = new File("up");
-
+		
 		/*Search for upload directory if doesn't exist create*/
 		if(!directory.exists()){
 			directory.mkdir();
 		}
 
 		File[] files = directory.listFiles();		//List all the files in upload directory
-
+		
 		clientOut.writeInt(files.length);
 
 		for(File file : files)

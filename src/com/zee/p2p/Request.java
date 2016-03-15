@@ -52,10 +52,18 @@ public class Request {
 				/* "UPDATE" request will update files available at client to central index */
 				if(code.equalsIgnoreCase("UPDATE")){
 					int files = clientIn.readInt();
-					
-					for(int i = 0; i < files; i++){				//Receive file names from client sequentially
+					if (files == -1){
+						String add = clientIn.readUTF();
 						fileName = clientIn.readUTF();
-						index.addFiles(myClient, fileName, id);	//addFiles() will add file details to central index
+						String[] rep = add.split(" ");
+						int pId = index.getPeer(Integer.parseInt(rep[1]), rep[0]);
+						index.addFiles(myClient, fileName, pId);
+					}
+					else{
+						for(int i = 0; i < files; i++){				//Receive file names from client sequentially
+							fileName = clientIn.readUTF();
+							index.addFiles(myClient, fileName, id);	//addFiles() will add file details to central index
+						}
 					}
 					
 				}

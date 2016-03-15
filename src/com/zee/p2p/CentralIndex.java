@@ -21,17 +21,17 @@ import java.util.Set;
 public class CentralIndex {
 	String ip, port;
 	static int counter;
-
+	
 	private Hashtable<Integer, Peer> peerList;					//Hashtable to store the peer details
 	private Hashtable<String, ArrayList<Integer>> fileList;		//Hashtable to store the file details
-
+	
 	/*Default constructor that will instantiate Hashtable*/
 	public CentralIndex() {
 		// TODO Auto-generated constructor stub
 		setPeerList(new Hashtable<Integer, Peer>());
 		setFileList(new Hashtable<String, ArrayList<Integer>>());
 	}
-
+	
 	/*Accessors and modifiers for the Hashtables*/
 	public Hashtable<Integer, Peer> getPeerList() {
 		return peerList;
@@ -58,25 +58,14 @@ public class CentralIndex {
 	 * 					id assigned to the peer.
 	 * **********************************************************************/
 	public int addPeer(Socket myClient) {
-		Peer checkPeer = new Peer();
-		String host;
-		int id = 0, port;
+		int id = 0;
+		
+		id = getPeer(myClient.getPort(), myClient.getInetAddress().getHostAddress());
 
-		/*Iterate through the peerList table to check if the peer already exists*/
-		for(Entry<Integer, Peer> entry: peerList.entrySet()){
-			checkPeer = entry.getValue();
-			host = checkPeer.getPeerName();
-			port = checkPeer.getPeerPort();
-			if(myClient.getRemoteSocketAddress().equals(host) && (myClient.getPort() == (port))){
-				id = entry.getKey();
-				break;
-			}
-		}
-
-		if(id > 0)
+		if(id > 0) 
 			return id;		//If peer found, return its ID
 		else{
-			counter++;
+			counter++;		
 			int pid = counter;		//If its a new peer assign a new ID
 
 			Peer newPeer = new Peer();		//create a peer object that will contain peer details
@@ -86,29 +75,49 @@ public class CentralIndex {
 
 			return pid;
 		}
-
-
 	}
-
+	
+	/* **********************************************************************
+	 * Method Name 	:	getPeers
+	 * Parameters	:	port, host
+	 * Returns		:	pid
+	 * Description	:	This method will check if the peer already exists in 
+	 * 					the central index.
+	 * **********************************************************************/
+	public int getPeer(int port, String host){
+		int id = 0;
+		Peer checkPeer;
+		/*Iterate through the peerList table to check if the peer already exists*/
+		for(Entry<Integer, Peer> entry: peerList.entrySet()){
+			checkPeer = entry.getValue();
+			if(checkPeer.getPeerName().equals(host) && (checkPeer.getPeerPort() == (port))){
+				id = entry.getKey();
+				break;
+			}
+		}
+		return id;
+	}
+	
 	/* **********************************************************************
 	 * Method Name 	:	addFiles
 	 * Parameters	:	myClient, fileName, id
 	 * Returns		:	void
-	 * Description	:	This method will add the files details received from
+	 * Description	:	This method will add the files details received from 
 	 * 					the client to the central index.
 	 * **********************************************************************/
 	public void addFiles(Socket myClient, String fileName, int id){
 		String file;
 		int chk = 0;
-
+		
+		System.out.println(id + " " + fileName);
 		ArrayList<Integer> currentList = new ArrayList<Integer>();
-
+		
 		/*Iterate through the fileList table to check if the file already exists*/
 		for(Entry<String, ArrayList<Integer>> entry: fileList.entrySet()){
 			file = entry.getKey();
 			if(file.equalsIgnoreCase(fileName)){
 				chk = 1;
-				break;
+				break; 
 			}
 		}
 
@@ -122,7 +131,7 @@ public class CentralIndex {
 			fileList.put(fileName, currentList);
 		}
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	searchFiles
 	 * Parameters	:	fileName
@@ -134,7 +143,7 @@ public class CentralIndex {
 		// TODO Auto-generated method stub
 		return getFileList().get(fileName);
 	}
-
+	
 	/* **********************************************************************
 	 * Method Name 	:	searchPeers
 	 * Parameters	:	pid
@@ -150,19 +159,19 @@ public class CentralIndex {
 	 * Method Name 	:	removePeer
 	 * Parameters	:	myClient, id
 	 * Returns		:	void
-	 * Description	:	This method will remove peer details of
+	 * Description	:	This method will remove peer details of 
 	 * 					corresponding id from the central index.
 	 * **********************************************************************/
 	public void removePeer(Socket myClient, int id) {
 		// TODO Auto-generated method stub
 		String file;
 		ArrayList<Integer> currentList = new ArrayList<Integer>();
-
+		
 		peerList.remove(id);		//Removes peer from central peer table
-
+		
 		Set<String> keys = fileList.keySet();
 		Iterator<String> itr = keys.iterator();
-
+		
 		/*Iterate through fileList table and removes the peer id*/
 		while (itr.hasNext()) {
 			file = itr.next();
@@ -176,14 +185,14 @@ public class CentralIndex {
 	                }
 	            }
 			}
-		}
+		}		 
 	}
 
 	/* **********************************************************************
 	 * Method Name 	:	replicateFiles
 	 * Parameters	:	num, id
 	 * Returns		:	ArrayList of peers
-	 * Description	:	This method will check if requested number of peers
+	 * Description	:	This method will check if requested number of peers 
 	 * 					are available for replication and returns list of
 	 * 					available peers for replication.
 	 * **********************************************************************/
@@ -191,7 +200,7 @@ public class CentralIndex {
 		// TODO Auto-generated method stub
 		int peerId;
 		ArrayList<Integer> currentList = new ArrayList<Integer>();
-
+		
 		/*Iterate through peerList for available peers*/
 		if((getPeerList().size() - 1) >= num ){
 			for(Entry<Integer, Peer> entry: peerList.entrySet()){
