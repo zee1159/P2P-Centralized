@@ -70,10 +70,8 @@ public class Request {
 					currentList = index.searchFiles(fileName);		//searchfile() will return list of peers containing requested file
 					
 					if(currentList != null){
-						int sizeC = currentList.size();
-						
 						/* Check to remove the peer name from the list if it already has the file */
-						if(sizeC != 0){
+						if(currentList.size() != 0){
 							Iterator<Integer> temp = currentList.iterator();
 							while(temp.hasNext()){
 								if(temp.next() != id){
@@ -108,8 +106,7 @@ public class Request {
 					currentList = index.replicateFiles(num, id);
 					
 					if(currentList != null){
-						int size = currentList.size();
-						serverOut.writeInt(size);
+						serverOut.writeInt(currentList.size());
 						Iterator<Integer> iter = currentList.iterator();
 						
 						while(iter.hasNext()){
