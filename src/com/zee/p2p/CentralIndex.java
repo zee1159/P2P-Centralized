@@ -109,7 +109,6 @@ public class CentralIndex {
 		String file;
 		int chk = 0;
 		
-		System.out.println(id + " " + fileName);
 		ArrayList<Integer> currentList = new ArrayList<Integer>();
 		
 		/*Iterate through the fileList table to check if the file already exists*/

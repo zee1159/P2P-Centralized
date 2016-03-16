@@ -103,7 +103,6 @@ public class Request {
 						}
 					}
 					
-					serverOut.write(0);
 				}
 				
 				/* "REPLICATE" request will send list of clients available for file replication */
